@@ -1,0 +1,76 @@
+name: Auto merge
+
+on:
+  schedule:
+    - cron: '0 */24 * * *'
+  workflow_dispatch:
+
+jobs:
+  auto_merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.COMMIT_TOKEN }}
+
+      - name: Set up Git user
+        run: |
+          git config --global user.email "softengg.roshan@gmail.com
+          git config --global user.name "Roshan Bhagat"
+
+      - name: Generate branch name
+        id: branch_name
+        run: |
+          BRANCH_NAME="auto-merge-$(date +'%Y-%m-%d-%H-%M-%S')"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Checkout new branch
+        run: |
+          git checkout -b "${{ steps.branch_name.outputs.branch }}"
+
+      - name: Modify last update file
+        run: |
+          echo "$(date '+%Y-%m-%dT%H:%M:%SZ')" > LAST_UPDATED
+
+      - name: Commit changes
+        run: |
+          git add LAST_UPDATED
+          arr=(
+            "chore(bot): 😂 auto merge"
+            "chore(bot): 😱 auto merge" 
+            "chore(bot): 👿 auto merge"
+            "chore(bot): 💩 auto merge"
+            "chore(bot): 🙏 auto merge"
+            "chore(bot): 🙈 auto merge"
+            "chore(bot): 🐐 auto merge"
+            "chore(bot): 🤖 auto merge"
+            "chore(bot): 🟩 auto merge"
+            "chore(bot): 👻 auto merge"
+          )
+          rand=$((RANDOM % ${#arr[@]}))
+          git commit -m "${arr[$rand]}"
+
+      - name: Push the new branch
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          COMMIT_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+          
+        run: |
+          git push -u https://$COMMIT_TOKEN@github.com/${{ github.repository }} "$BRANCH_NAME"
+
+      - name: Create pull request with gh
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+        run: |
+          gh pr create --title "Auto Merge PR" --body "This PR contains an auto merge for the changes." --base main --head "$BRANCH_NAME" --repo "${{ github.repository }}"
+
+      - name: Merge PR using gh
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+        run: |
+          gh pr merge "$BRANCH_NAME" --squash --delete-branch --repo "${{ github.repository }}"
