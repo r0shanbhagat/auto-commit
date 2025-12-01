@@ -2,18 +2,21 @@ name: Auto merge
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # runs daily at 00:00 UTC
+    - cron: '0 0 * * *'   # run daily at midnight UTC
   workflow_dispatch:
 
 jobs:
   auto_merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.COMMIT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # persist-credentials defaults to true; no need to set explicitly
 
       - name: Set up Git user
         run: |
@@ -53,27 +56,19 @@ jobs:
           git commit -m "${arr[$rand]}"
 
       - name: Push the new branch
-        env:
-          BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
-          COMMIT_TOKEN: ${{ secrets.COMMIT_TOKEN }}
         run: |
-          git push -u "https://$COMMIT_TOKEN@github.com/${{ github.repository }}" "$BRANCH_NAME"
+          git push -u origin "${{ steps.branch_name.outputs.branch }}"
 
       - name: Create pull request with gh
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
-          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
         run: |
-          gh pr create \
-            --title "Auto Merge PR" \
-            --body "This PR contains an auto merge for the changes." \
-            --base main \
-            --head "$BRANCH_NAME" \
-            --repo "${{ github.repository }}"
+          gh pr create --title "Auto Merge PR" --body "This PR contains an auto merge for the changes." --base main --head "$BRANCH_NAME" --repo "${{ github.repository }}"
 
       - name: Merge PR using gh
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
-          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
         run: |
           gh pr merge "$BRANCH_NAME" --squash --delete-branch --repo "${{ github.repository }}"
