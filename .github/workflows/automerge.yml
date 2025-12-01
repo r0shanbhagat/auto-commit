@@ -2,7 +2,7 @@ name: Auto merge
 
 on:
   schedule:
-    - cron: '0 */24 * * *'
+    - cron: '0 0 * * *'   # once every 24h at 00:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -17,14 +17,14 @@ jobs:
 
       - name: Set up Git user
         run: |
-          git config --global user.email "softengg.roshan@gmail.com
+          git config --global user.email "softengg.roshan@gmail.com"
           git config --global user.name "Roshan Bhagat"
 
       - name: Generate branch name
         id: branch_name
         run: |
           BRANCH_NAME="auto-merge-$(date +'%Y-%m-%d-%H-%M-%S')"
-          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Checkout new branch
         run: |
@@ -39,7 +39,7 @@ jobs:
           git add LAST_UPDATED
           arr=(
             "chore(bot): 😂 auto merge"
-            "chore(bot): 😱 auto merge" 
+            "chore(bot): 😱 auto merge"
             "chore(bot): 👿 auto merge"
             "chore(bot): 💩 auto merge"
             "chore(bot): 🙏 auto merge"
@@ -56,17 +56,20 @@ jobs:
         env:
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
           COMMIT_TOKEN: ${{ secrets.COMMIT_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.COMMIT_TOKEN }}
-          
         run: |
-          git push -u https://$COMMIT_TOKEN@github.com/${{ github.repository }} "$BRANCH_NAME"
+          git push -u "https://$COMMIT_TOKEN@github.com/${{ github.repository }}" "$BRANCH_NAME"
 
       - name: Create pull request with gh
         env:
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
           GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
         run: |
-          gh pr create --title "Auto Merge PR" --body "This PR contains an auto merge for the changes." --base main --head "$BRANCH_NAME" --repo "${{ github.repository }}"
+          gh pr create \
+            --title "Auto Merge PR" \
+            --body "This PR contains an auto merge for the changes." \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --repo "${{ github.repository }}"
 
       - name: Merge PR using gh
         env:
