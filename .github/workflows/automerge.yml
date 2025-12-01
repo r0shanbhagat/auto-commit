@@ -58,16 +58,17 @@ jobs:
         run: |
           git push -u origin "${{ steps.branch_name.outputs.branch }}"
 
-      - name: Create pull request with gh CLI
+          - name: Create pull request with gh CLI
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
         run: |
           gh pr create --title "Auto Merge PR" --body "This PR contains an auto merge for the changes." --base main --head "$BRANCH_NAME" --repo "${{ github.repository }}"
 
       - name: Merge PR using gh CLI
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
         run: |
           gh pr merge "$BRANCH_NAME" --squash --delete-branch --repo "${{ github.repository }}"
+
