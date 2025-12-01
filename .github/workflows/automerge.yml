@@ -2,20 +2,18 @@ name: Auto merge
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # Runs daily at midnight UTC
+  - cron: "0 7,9,11 * * 1,3" # See https://crontab.guru/#0_7,9,11_*_*_1,3
   workflow_dispatch:
 
 jobs:
   auto_merge:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.COMMIT_TOKEN }}  # PAT with repo access
+          token: ${{ secrets.COMMIT_TOKEN }}
 
       - name: Set up Git user
         run: |
@@ -26,7 +24,7 @@ jobs:
         id: branch_name
         run: |
           BRANCH_NAME="auto-merge-$(date +'%Y-%m-%d-%H-%M-%S')"
-          echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Checkout new branch
         run: |
@@ -41,7 +39,7 @@ jobs:
           git add LAST_UPDATED
           arr=(
             "chore(bot): 😂 auto merge"
-            "chore(bot): 😱 auto merge"
+            "chore(bot): 😱 auto merge" 
             "chore(bot): 👿 auto merge"
             "chore(bot): 💩 auto merge"
             "chore(bot): 🙏 auto merge"
@@ -55,24 +53,24 @@ jobs:
           git commit -m "${arr[$rand]}"
 
       - name: Push the new branch
-        run: |
-          git push -u origin "${{ steps.branch_name.outputs.branch }}"
-
-      - name: Create pull request with gh CLI
         env:
-          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          COMMIT_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+          
         run: |
-          gh pr create \
-            --title "Auto Merge PR" \
-            --body "This PR contains an auto merge for the changes." \
-            --base main \
-            --head "$BRANCH_NAME" \
-            --repo "${{ github.repository }}"
+          git push -u https://$COMMIT_TOKEN@github.com/${{ github.repository }} "$BRANCH_NAME"
 
-      - name: Merge PR using gh CLI
+      - name: Create pull request with gh
         env:
-          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
           BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
+        run: |
+          gh pr create --title "Auto Merge PR" --body "This PR contains an auto merge for the changes." --base main --head "$BRANCH_NAME" --repo "${{ github.repository }}"
+
+      - name: Merge PR using gh
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.branch }}
+          GH_TOKEN: ${{ secrets.COMMIT_TOKEN }}
         run: |
           gh pr merge "$BRANCH_NAME" --squash --delete-branch --repo "${{ github.repository }}"
