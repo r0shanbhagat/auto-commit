@@ -1,8 +1,8 @@
-name: Auto merge
+name: Auto-merge
 
 on:
   schedule:
-  - cron: "0 7,9,11 * * 2,4,6" # See https://crontab.guru/#0_7,9,11_*_*_1,3
+  - cron: "0 19 * * 2,4,6" # See https://crontab.guru/#0_7,9,11_*_*_1,3
   workflow_dispatch:
 
 jobs:
